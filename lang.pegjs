@@ -2,10 +2,25 @@ start = c:CONTENT { return c; }
 
 CONTENT = ( TAG / SOLETAG )+
 
-TAG = __ "<" __ ULs __ ">" __ CONTENT __ "</" __ ULs __ ">" __
-SOLETAG = __ "<" __ ULs __ "/>" __
+TAG = __ "<" __ name:ULs __ props:PROPS? __ ">" __ content:CONTENT __ "</" __ ename:ULs __ ">" __ { if(name == ename) return { type : "tag", name : name, props:props, childNodes : content }; else throw new Exception("tag " + name + " do not match tag " + ename); }
+SOLETAG = __ "<" __ name:ULs __ props:PROPS? __ "/>" __ { return { type : "tag", name : name, props: props, childNodes : [] }; }
 TEXT = __ ULs __
 ULs = UnicodeLetter+ { return text(); }
+PROPS = props:(PROP+) {
+  var ret = {};
+  console.log(props);
+  for(var x = 0; x < props.length;x++) {
+    var dict = props[x];
+    for(var key in dict) {
+      ret[key] = dict[key];
+    }
+  }
+  return ret;
+}
+PROP = __ title:ULs value:VALUE? __ { var obj = {}; value = value || false; obj[title] = value; return obj; }
+VALUE = "=" data:StringLiteral { return data.value; }
+ReservedWord =
+  "teste123"
 
 SourceCharacter
   = .

@@ -27,7 +27,7 @@ setTimeout(async function() {
                 try {
                     var result = lang.parse(answer);
                     if(result) {
-                        var client = Client({a:10,b:20});
+                        var client = Client({parsed:answer});
                         await client.dataPromise;
                     }
                     console.log(result);
