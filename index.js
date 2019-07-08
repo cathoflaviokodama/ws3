@@ -14,6 +14,7 @@ setTimeout(async function() {
     var lang = pegjs.generate( fs.readFileSync("lang.pegjs","utf8") );
     function prompt() {
         rl.question('>', async (answer) => {
+            console.log(answer);
             if(answer == "send") {
                 var client = Client();
                 await client.dataPromise;
@@ -31,6 +32,7 @@ setTimeout(async function() {
                     }
                     console.log(result);
                 } catch(e) {
+                    console.log("ERROR");
                     console.log(e.messsage);
                 }
                 prompt();

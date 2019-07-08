@@ -47,6 +47,7 @@ function Server() {
                 console.log('Received Message: ' + message.utf8Data);
                 var json = JSON.parse(message.utf8Data);
                 connection.sendUTF(message.utf8Data);
+                
                 if(json.close) {
                     connection.close();
                 }
