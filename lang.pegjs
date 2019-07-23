@@ -1,3 +1,56 @@
+
+{
+  var TYPES_TO_PROPERTY_NAMES = {
+    CallExpression:   "callee",
+    MemberExpression: "object",
+  };
+
+  
+
+  function filledArray(count, value) {
+    return Array.apply(null, new Array(count))
+      .map(function() { return value; });
+  }
+
+  function extractOptional(optional, index) {
+    return optional ? optional[index] : null;
+  }
+
+  function extractList(list, index) {
+    return list.map(function(element) { return element[index]; });
+  }
+
+  function buildList(head, tail, index) {
+    return [head].concat(extractList(tail, index));
+  }
+
+  function buildBinaryExpression(head, tail) {
+    return tail.reduce(function(result, element) {
+      return {
+        type: "BinaryExpression",
+        operator: element[1],
+        left: result,
+        right: element[3]
+      };
+    }, head);
+  }
+
+  function buildLogicalExpression(head, tail) {
+    return tail.reduce(function(result, element) {
+      return {
+        type: "LogicalExpression",
+        operator: element[1],
+        left: result,
+        right: element[3]
+      };
+    }, head);
+  }
+
+  function optionalList(value) {
+    return value !== null ? value : [];
+  }
+}
+
 start = c:CONTENT? { return c; }
 CONTENT = ( TEXT / TAG / SOLETAG )+
 TEXT = TEXTCHAR+ { return {type:"text",value:text() }; }
@@ -24,7 +77,7 @@ PROPS = props:(PROP+) {
   return ret;
 }
 PROP = __ title:NAME value:VALUE? __ { var obj = {}; if(value === null || value == undefined) value = false; obj[title] = value; return obj; }
-VALUE = "=" data:Literal { if(data.type == 'Literal') return data.value; else if(data.type == 'tag') return data; }
+VALUE = "=" data:Literal { if(data.type == 'Literal') return data.value; else if(data.type == 'tag') return data; else return data;}
 ReservedWord =
   "teste123"
 
@@ -107,6 +160,7 @@ UnicodeConnectorPunctuation
 
 Literal
   = TAG / SOLETAG / NullLiteral
+  / ArrayLiteral 
   / BooleanLiteral
   / NumericLiteral
   / StringLiteral
@@ -291,3 +345,35 @@ TrueToken       = "true"       !IdentifierPart
 FalseToken      = "false"      !IdentifierPart
 
 
+
+
+ArrayLiteral
+  = "[" __ elision:(Elision __)? "]" {
+      return optionalList(extractOptional(elision, 0))
+    }
+  / "[" __ elements:ElementList __ "]" {
+      return elements
+    }
+  / "[" __ elements:ElementList __ "," __ elision:(Elision __)? "]" {
+      return elements.concat(optionalList(extractOptional(elision, 0)))
+    }
+
+ElementList
+  = head:(
+      elision:(Elision __)? element:Literal {
+
+        if(element.type == 'Literal') element = element.value;
+
+        return optionalList(extractOptional(elision, 0)).concat(element);
+      }
+    )
+    tail:(
+      __ "," __ elision:(Elision __)? element:Literal {
+        if(element.type == 'Literal') element = element.value;
+        return optionalList(extractOptional(elision, 0)).concat(element);
+      }
+    )*
+    { return Array.prototype.concat.apply(head, tail); }
+
+Elision
+  = "," commas:(__ ",")* { return filledArray(commas.length + 1, null); }
