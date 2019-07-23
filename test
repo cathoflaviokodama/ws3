@@ -1,0 +1,1 @@
+<html><head><script>window.addEventListener("load",function() { alert("Hello World!"); });</script></head><body><div>Hello World!</div></body></html>

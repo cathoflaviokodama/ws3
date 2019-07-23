@@ -30,10 +30,16 @@ setTimeout(async function() {
                         var client = Client({parsed:answer});
                         await client.dataPromise;
                     }
-                    console.log(result);
+                    console.log(JSON.stringify(result, function(key, value){
+                        if (typeof value === 'bigint') {
+                            return value.toString() + "n";
+                        } else {
+                            return value;
+                        }
+                    }));
                 } catch(e) {
                     console.log("ERROR");
-                    console.log(e.messsage);
+                    console.log(e);
                 }
                 prompt();
             }

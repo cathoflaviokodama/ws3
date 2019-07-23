@@ -1,14 +1,20 @@
-start = c:CONTENT { return c; }
+start = c:CONTENT? { return c; }
+CONTENT = ( TEXT / TAG / SOLETAG )+
+TEXT = TEXTCHAR+ { return {type:"text",value:text() }; }
+TEXTCHAR = !( __ "</" __ ename:NAME __ ">" __ / TAG / SOLETAG) .
+TAG = __ "<" __ name:NAME __ props:PROPS? __ ">" __ content:CONTENT? __ "</" __ ename:NAME __ ">" __ { 
+    if(name == ename) 
+      return { type : "tag", name : name, props:props == null ? {} : props, childNodes : content == null ? [] : content }; 
+    else 
+      throw new Exception("tag " + name + " do not match tag " + ename); 
+}
+SOLETAG = __ "<" __ name:NAME __ props:PROPS? __ "/>" __ { 
+  return { type : "tag", name : name, props: props == null? {} : props, childNodes : [] }; 
+}
 
-CONTENT = ( TAG / SOLETAG )+
-
-TAG = __ "<" __ name:ULs __ props:PROPS? __ ">" __ content:CONTENT __ "</" __ ename:ULs __ ">" __ { if(name == ename) return { type : "tag", name : name, props:props, childNodes : content }; else throw new Exception("tag " + name + " do not match tag " + ename); }
-SOLETAG = __ "<" __ name:ULs __ props:PROPS? __ "/>" __ { return { type : "tag", name : name, props: props, childNodes : [] }; }
-TEXT = __ ULs __
-ULs = UnicodeLetter+ { return text(); }
+NAME = IdentifierName { return text(); }
 PROPS = props:(PROP+) {
   var ret = {};
-  console.log(props);
   for(var x = 0; x < props.length;x++) {
     var dict = props[x];
     for(var key in dict) {
@@ -17,8 +23,8 @@ PROPS = props:(PROP+) {
   }
   return ret;
 }
-PROP = __ title:ULs value:VALUE? __ { var obj = {}; value = value || false; obj[title] = value; return obj; }
-VALUE = "=" data:StringLiteral { return data.value; }
+PROP = __ title:NAME value:VALUE? __ { var obj = {}; if(value === null || value == undefined) value = false; obj[title] = value; return obj; }
+VALUE = "=" data:Literal { if(data.type == 'Literal') return data.value; else if(data.type == 'tag') return data; }
 ReservedWord =
   "teste123"
 
@@ -99,11 +105,8 @@ UnicodeDigit
 UnicodeConnectorPunctuation
   = Pc
 
-
-
-
 Literal
-  = NullLiteral
+  = TAG / SOLETAG / NullLiteral
   / BooleanLiteral
   / NumericLiteral
   / StringLiteral
@@ -118,7 +121,12 @@ BooleanLiteral
 // The "!(IdentifierStart / DecimalDigit)" predicate is not part of the official
 // grammar, it comes from text in section 7.8.3.
 NumericLiteral "number"
-  = literal:HexIntegerLiteral !(IdentifierStart / DecimalDigit) {
+  = literal:DecimalIntegerLiteral "n" !(IdentifierName / DecimalDigit) {
+    var t = text();
+    
+    return { type : "Literal" , value : BigInt( t.substring(0,t.length-1) ) }
+  } 
+  / literal:HexIntegerLiteral !(IdentifierStart / DecimalDigit) {
       return literal;
     }
   / literal:DecimalLiteral !(IdentifierStart / DecimalDigit) {
